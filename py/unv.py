@@ -16,6 +16,7 @@ __doc__ = '''TODO: Document the script
 # Internal
 from unv_field import TestField
 from unv_record import TestRecord
+from unv_data_set import TestDataSet
 
 #
 # Tests

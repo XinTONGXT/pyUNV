@@ -10,41 +10,14 @@ Field Types are Like:
     10A1        10 Alphanumeric Characters
     4I10        4 Integer values written 10 characters each
     3D25.17     3 Double values written 25 characters each with 17 decimals
-    1P3D25.16   1 array of 3 doubles, each taking 25 characters each with 17 decimals
+    1P3D25.16   1 array of 3 doubles, each taking 25 characters each with 17 decimals    
     
-Sample Record 164:
-Record 1:       FORMAT(I10,20A1,I10)
-                Field 1      -- units code
-                                = 1 - SI: Meter (newton)
-                                = 2 - BG: Foot (pound f)
-                                = 3 - MG: Meter (kilogram f)
-                                = 4 - BA: Foot (poundal)
-                                = 5 - MM: mm (milli newton)
-                                = 6 - CM: cm (centi newton)
-                                = 7 - IN: Inch (pound f)
-                                = 8 - GM: mm (kilogram f)
-                                = 9 - US: USER_DEFINED
-                                = 10- MN: mm (newton)
-                Field 2      -- units description (used for
-                                documentation only)
-                Field 3      -- temperature mode
-                                = 1 - absolute
-                                = 2 - relative
-Record 2:       FORMAT(3D25.17)
-                Unit factors for converting universal file units to SI.
-                To convert from universal file units to SI divide by
-                the appropriate factor listed below.
-                Field 1      -- length
-                Field 2      -- force
-                Field 3      -- temperature
-                Field 4      -- temperature offset
-    -1
-   164
-         1 SI - mks (Newton)  2
-  1.00000000000000000e+00  1.00000000000000000e+00  1.00000000000000000e+00
-  0.00000000000000000e+00
-    -1
-                
+    
+    TODO: Today for 1P3D25.16 we create 3 Fields, however in the format definition it is 
+    one field with 3 values, such as coordinates, You would have one field called coordinates
+    and values would be accessed as coordinates[0], [1], [2]. today we have to define 
+    coordinate_x, _y, _z. For the completeness it is better to support arrays (dimension) in the 
+    field definition
 '''
 
 
