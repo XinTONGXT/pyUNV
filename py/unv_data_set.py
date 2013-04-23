@@ -6,6 +6,12 @@ __license__ = "TBD"
 __version__ = "0.0"
 
 __doc__ = '''
+    TODO: If we take record 2411 as example, data refers to node, so there will be an array of 
+    nodes, two records will be used to define them with multiple fields. It would be cool to acces
+    for node in nodes:
+        node.name, node.color_code, node.coord[0], node.coord[1] etc
+
+        
 Sample Record 164:
 Record 1:       FORMAT(I10,20A1,I10)
                 Field 1      -- units code
@@ -45,15 +51,51 @@ Record 2:       FORMAT(3D25.17)
 # Standard
 
 # 3rd Party
+from web import Storage
 
 # Internal
 from unv_record import Field, Record
+from unv_tokenizer import Tokenizer, DataSetIdentifierException
+from unv_data_sets import get_data_set_definition
 
+dataset_start = '    -1'
+dataset_end   = '    -1'
+
+#
+#
+#
+def get_data_set(number, tokenizer):
+    definition = get_data_set_definition(number)
+    return DataSet(number, definition['definition'], definition['data'], tokenizer)
+
+#
+#
+def _num_values(records):
+    '''Returns number of values which should be read from the records'''
+    return reduce(lambda x, y : len(x.fields) + len(y.fields), records)
+    
+#
+#
+def _read_records(records, tokenizer, numValues):
+    '''Real all fields from given records and return as a single storage object
+    It will raise ValueError if not all fields are read
+    '''
+    _values = Storage()
+    try:
+        for record in records:
+            values = record.read(tokenizer)
+            for key in values:
+                _values[key] = values[key]
+        return _values
+    except (StopIteration, DataSetIdentifierException) as e :
+        raise e
+        
+    raise ValueError('Could not read all the fields')
 #
 #
 #
 class DataSet:
-    def __init__(self, data_set_number, definition_records, data_records):
+    def __init__(self, data_set_number, definition_records, data_records, tokenizer):
         '''A Data Set has a unique number and a set of records. 
         There are two types of records: 
         - Definition Records: They appear ones in the data aet
@@ -67,31 +109,84 @@ class DataSet:
         A data set buffer lies between the data set number and the data set end identifier
         (both excluded)
         '''
-        self.data_set_number = data_set_number
+        self.number = data_set_number
         self.definition_records = definition_records
         self.data_records = data_records
-    
-    def read(self, buffer):
-        '''
-        TODO: End of line characters in the buffer creates trouble while traversing throught
-        the buffer. Moving through the buffer should consider the EOL and ignore them, however
-        it is not implemented tet. When we search for the buffer for the field (Field.parse) we 
-        should get till the field length or EOL, whichever comes first
+        self.tokenizer = tokenizer
         
-        Below line will create trouble if buffer contains comment lines (which looks like possible
-        according to the documentation)
-        '''
-        buffer = buffer.replace('\n', '')
-        
+        self.field_map = {}
         for record in self.definition_records:
-            buffer = record.parse(buffer)
-        return self
+            for field in record.fields:
+                self.field_map[field.name] = field
         
+        self.__values = None    
+        self.__data = None
+        self.__startPos = tokenizer.tell()
+            
+    def __getValues(self):
+        '''values object keeps all the values from definition records
+        We can implement __getattr__ method but this is more explicit. so instead user accessing as
+            dataSet.units_code
+        it should be accessed as: 
+            dataSet.values.units_code
+        
+        This gives user the ability to loop over all values in a for loop and avoids getattr overloading
+        I am not too keen on "values" name could not find one yet
+        '''
+        if not self.__values:
+            self.__values = self.read_definition()
+        return self.__values
+    values = property(__getValues)
+    
+    def __getData(self):
+        if not self.__data:
+            self.__data = self.read_data()
+        return self.__data
+    data = property(__getData)
+    
+    def read_definition(self):
+        if self.tokenizer.tell() != self.__startPos:
+            self.tokenizer.seek(self.__startPos)
+            
+        _values = Storage()
+        for record in self.definition_records:
+            values = record.read(self.tokenizer)
+            for key in values:
+                _values[key] = values[key]
+        return _values
+        
+    def read_data(self):
+        _data = []
+        try:
+            numValues = _num_values(self.data_records)
+            while True:
+                _data.append(_read_records(self.data_records, self.tokenizer, numValues))
+        except (StopIteration, DataSetIdentifierException) as e:
+            pass #StopIteration is raised by tokenizer at the end of the stream
+        
+        return _data
+        
+    
+    def skip(self):
+        '''process throught the stream till the end of the dataset
+        TODO: perhaps we should keep the tokenizer as the member
+        '''
+        try:
+            while True:
+                buffer = self.tokenizer.read_line()
+                if buffer == dataset_end:
+                    return
+                if buffer == '':
+                    break
+        except (StopIteration):
+            pass #StopIteration is raised by tokenizer at the end of the stream
+            
+        raise ValueError('Data Set Ending identifier is not found')
+            
     def write(self):
         buffer = ''
         for record in self.definition_records:
-            buffer += record.write() + '\n'
-            
+            buffer += record.write(self.values) + '\n'
         return buffer
         
 #
@@ -103,38 +198,122 @@ class TestDataSet(unittest.TestCase):
     def setUp(self):
         #FORMAT(I10,20A1,I10)
         #FORMAT(3D25.17)
-        self.definitionRecords = [
-              Record([Field(int, 10, '', ''), Field(str, 20, '', ''), Field(int, 10, '', '')])
-            , Record([Field(float, (25, 17), '', '')
-                    , Field(float, (25, 17), '', '') 
-                    , Field(float, (25, 17), '', '')
-                    , Field(float, (25, 17), '', '')])
-        ]
-        self.buffer = '''         1SI - mks (Newton)            2
+        
+        self.buffer164 = '''         1SI - mks (Newton)            2
   1.00000000000000000e+00  2.00000000000000000e+00  3.00000000000000000e+00
   4.00000000000000000e+00
 '''
         
+        self.buffer2411 = '''        67         1         1         1
+    0.000000000000000e+00    0.000000000000000e+00    0.000000000000000e+00
+        68         1         1         1
+    0.000000000000000e+00    2.000000000000000e-02    0.000000000000000e+00
+        69         1         1         1
+    0.000000000000000e+00    4.000000000000000e-02    0.000000000000000e+00
+'''
+        self.tokenizer2411 = Tokenizer(self.buffer2411)
         
     def tearDown(self):
         pass
     
+    #Read Definition (values)
     def test_read_FullDataSet(self):
-        dataSet = DataSet(164, self.definitionRecords, [])
-        dataSet.read(self.buffer)
-        self.assertEqual(dataSet.definition_records[0].fields[0].value, 1)
-        self.assertEqual(dataSet.definition_records[0].fields[1].value, 'SI - mks (Newton)')
-        self.assertEqual(dataSet.definition_records[0].fields[2].value, 2)
-        
-        self.assertEqual(dataSet.definition_records[1].fields[0].value, 1.0)
-        self.assertEqual(dataSet.definition_records[1].fields[1].value, 2.0)
-        self.assertEqual(dataSet.definition_records[1].fields[2].value, 3.0)
-        self.assertEqual(dataSet.definition_records[1].fields[3].value, 4.0)
+        with Tokenizer(self.buffer164) as tokenizer:
+            dataSet = get_data_set(164, tokenizer)
+            values = dataSet.read_definition()
+            
+            self.assertEqual(values.units_code, 1)
+            self.assertEqual(values.units_desc, 'SI - mks (Newton)')
+            self.assertEqual(values.temperature_mode, 2)
+            
+            self.assertEqual(values.length, 1.0)
+            self.assertEqual(values.force, 2.0)
+            self.assertEqual(values.temperature, 3.0)
+            self.assertEqual(values.temperature_offset, 4.0)
+            
+    def test_read_FullDataSetThroughValuesMember(self):
+        with Tokenizer(self.buffer164) as tokenizer:
+            dataSet = get_data_set(164, tokenizer)
+            
+            self.assertEqual(dataSet.values.units_code, 1)
+            self.assertEqual(dataSet.values.units_desc, 'SI - mks (Newton)')
+            self.assertEqual(dataSet.values.temperature_mode, 2)
+            
+            self.assertEqual(dataSet.values.length, 1.0)
+            self.assertEqual(dataSet.values.force, 2.0)
+            self.assertEqual(dataSet.values.temperature, 3.0)
+            self.assertEqual(dataSet.values.temperature_offset, 4.0)
     
+    #Read Data (data)
+    def test_read_data_ReadsTheWholeBuffer(self):
+        with Tokenizer(self.buffer2411) as tokenizer:
+            dataSet = get_data_set(2411, tokenizer)
+            data = dataSet.read_data()
+            self.assertEqual(len(data), 3)
+            
+            for i in range(len(data)):
+                self.assertEqual(data[i].node_label, 67 + i)
+                self.assertEqual(data[i].coordinate_y, 0.02 * i)
+
+    def test_read_data_ReadsTheBufferUntillDataSetEndIdentifier(self):
+        buffer = self.buffer2411 + dataset_end + '\n' + self.buffer2411
+        with Tokenizer(buffer) as tokenizer:
+            dataSet = get_data_set(2411, tokenizer)
+            data = dataSet.read_data()
+            self.assertEqual(len(data), 3)
+            
+            for i in range(len(data)):
+                self.assertEqual(data[i].node_label, 67 + i)
+                self.assertEqual(data[i].coordinate_y, 0.02 * i)
+    
+    def test_read_data_RaisesValueErrorIfStreamEndsInTheMiddle(self):
+        with Tokenizer(self.buffer2411[:25]) as tokenizer:
+            dataSet = get_data_set(2411, tokenizer)
+            with self.assertRaises(ValueError):
+                dataSet.read_data()
+                
+    def test_read_data_RaisesValueErrorIfDataSetEndsInTheMiddle(self):
+        buffer = self.buffer2411[:25] + dataset_end + '\n' + self.buffer2411[25:] 
+        with Tokenizer(buffer) as tokenizer:
+            dataSet = get_data_set(2411, tokenizer)
+            with self.assertRaises(ValueError):
+                dataSet.read_data()
+                
+                
+            
+    def test_data_ProvidesAccessToTheReadData(self):
+        with Tokenizer(self.buffer2411) as tokenizer:
+            dataSet = get_data_set(2411, tokenizer)
+            self.assertEqual(len(dataSet.data), 3)
+            
+            for i in range(len(dataSet.data)):
+                self.assertEqual(dataSet.data[i].node_label, 67 + i)
+                self.assertEqual(dataSet.data[i].coordinate_y, 0.02 * i)
+    
+    
+    #skip
+    def test_skip_GoesTillTheBeginningOfNextDataSet(self):
+        buffer = '   asome thjext sdflsk lk; sd;l kasdf\n    -1\nNewText'
+        with Tokenizer(buffer) as tokenizer:
+            dataSet = DataSet(0, [], [], tokenizer)
+            dataSet.skip()
+            self.assertEqual(tokenizer.read_line(), 'NewText')
+        
+    def test_skip_RaisesValueErrorIfEndMarkerIsNotFound(self):
+        buffer = '   asome thjext sdflsk lk; sd;l kasdf\n  \n  -1\nNewText'
+        with Tokenizer(buffer) as tokenizer:
+            dataSet = DataSet(0, [], [], tokenizer)
+            with self.assertRaises(ValueError):
+                dataSet.skip()
+        
+    
+    
+    #Write
     def test_write_FullDataSet(self):
-        dataSet = DataSet(164, self.definitionRecords, [])
-        dataSet.read(self.buffer)
-        self.assertEqual(dataSet.write(), self.buffer)
+        with Tokenizer(self.buffer164) as tokenizer:
+            dataSet = get_data_set(164, tokenizer)
+            dataSet.read_definition()
+            self.assertEqual(dataSet.write(), self.buffer164)
         
         
 #

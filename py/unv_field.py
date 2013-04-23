@@ -22,13 +22,12 @@ Field Types are Like:
 
 
 # Standard
+from cStringIO import StringIO
 
 # 3rd Party
 
 # Internal
-
-
-
+from unv_tokenizer import Tokenizer
 #
 #
 #
@@ -59,32 +58,23 @@ class Field:
         self.name = name
         self.description = description   
         
-        self.value = None
     
-    def read(self, buffer):
+    def read(self, tokenizer):
         '''read the value from given buffer, it returns itself so caller can perform
         something like "print field.read().value" '''
-        if len(buffer) != self.length:
-            raise ValueError
-        value = self.type(buffer)
-        if self.type is str:
-            value = value.strip()
-        self.value = value
-        return self
+        buffer = tokenizer.read(self.length)
+        buffer = buffer.strip()
+        #TODO: Below check is needed since trying to format an empty string as number gives trouble
+        value = None
+        if buffer != '':
+            value = self.type(buffer)
+        else:
+            value = self.type() #default value is used based on type
+        return value
         
-    def write(self, value=None):
-        '''write the given value to a string format and return
-        given value, if not None is stored as self.value
-        it always writes the self.value'''
-        if value is not None:
-            self.value = value
-        return self.format_string.format(self.value)
-        
-    def parse(self, buffer):
-        '''parse the given value, it will use the first part of the buffer to read
-           the value and return the remaining part'''
-        self.read(buffer[:self.length])
-        return buffer[self.length:]
+    def write(self, value):
+        '''write the given value to a string format and return given value'''
+        return self.format_string.format(value)
         
         
 #
@@ -102,69 +92,31 @@ class TestField(unittest.TestCase):
     #Read
     def test_read_HandlesString(self):
         field = Field(str, 10, '', '')
-        self.assertEqual(field.read('         5').value, '5')
+        with Tokenizer('         5') as tokenizer:
+            self.assertEqual(field.read(tokenizer), '5')
         
     def test_read_HandlesInt(self):
         field = Field(int, 10, '', '')
-        self.assertEqual(field.read('         5').value, 5)
+        with Tokenizer('         5') as tokenizer:
+            self.assertEqual(field.read(tokenizer), 5)
         
     def test_read_HandlesFloat(self):
         field = Field(float, (25, 17), '', '')
-        self.assertEqual(field.read('  1.00000000000000000e+01').value, 10.0)
-    
-    def test_read_RaisesValueErrorIfBufferLengthDoesNotMatch(self):
-        field = Field(int, 10, '', '')
-        with self.assertRaises(ValueError):
-            field.read('       5')
-        with self.assertRaises(ValueError):
-            field.read('            5')
+        with Tokenizer('  1.00000000000000000e+01') as tokenizer:
+            self.assertEqual(field.read(tokenizer), 10.0)
     
     #Write
     def test_write_ReturnsExpandedString(self):
         field = Field(str, 10, '', '')
         self.assertEqual(field.write('5'), '5         ')
-        self.assertEqual(field.write(), '5         ')
     
     def test_write_ReturnsAdjustedStringForInt(self):
         field = Field(int, 10, '', '')
         self.assertEqual(field.write(5), '         5')
-        self.assertEqual(field.write(), '         5')
         
     def test_write_ReturnsAdjustedStringForFloat(self):
         field = Field(float, (25, 17), '', '')
         self.assertEqual(field.write(10.0), '  1.00000000000000000e+01')
-        self.assertEqual(field.write(), '  1.00000000000000000e+01')
-    
-    #Parse    
-    def test_parse_UpdatesGivenBuffer(self):
-        buffer = '    8.000000000000000e-02    2.000000000000000e-02    0.000000000000000e+00'
-        field = Field(float, (25, 16), '', '')
-        values = [0.08, 0.02, 0.0]
-        for val in values:
-            buffer = field.parse(buffer)
-            self.assertEqual(field.value, val)
-            
-            
-    def test_parse_RaisesValueErrorIfBufferLengthIsShorter(self):
-        buffer = '    8.000000000000000e-02    2.000000000000000e-02    0.000000000000e+00'
-        field = Field(float, (25, 16), '', '')
-        values = [0.08, 0.02]
-        for val in values:
-            buffer = field.parse(buffer)
-            self.assertEqual(field.value, val)
-            
-        with self.assertRaises(ValueError):
-            field.parse(buffer)
-    
-    def test_parse_UpdatesGivenBufferEvenIfItIsLonger(self):
-        buffer = '    8.000000000000000e-02    2.000000000000000e-02    0.000000000000000e+00extrapart'
-        field = Field(float, (25, 16), '', '')
-        values = [0.08, 0.02, 0.0]
-        for val in values:
-            buffer = field.parse(buffer)
-            self.assertEqual(field.value, val)
-        self.assertEqual(buffer, 'extrapart')
-          
             
 #
 if __name__ == '__main__':

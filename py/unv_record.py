@@ -18,8 +18,10 @@ __doc__ = '''
 # Standard
 
 # 3rd Party
+from web import Storage
 
 # Internal
+from unv_tokenizer import Tokenizer, DataSetIdentifierException
 from unv_field import Field
 
 max_line_length = 80
@@ -36,25 +38,34 @@ class Record:
         for field in self.fields:
             self.field_map[field.name] = field
 
-    def read(self, buffer):
-        for field in self.fields:
-            buffer = field.parse(buffer)
-        return self
+    def read(self, tokenizer):
+        '''Read all field values and return as an array'''
+        values = Storage()
+        try:
+            for field in self.fields:
+                values[field.name] = field.read(tokenizer)
+        except (StopIteration, DataSetIdentifierException) as e:
+            if len(values.keys()) == 0:
+                raise e 
+            else:
+                raise ValueError('Not all records can be read')
+            
+        return values
         
     def write(self, dict=None, **keyArgs):
         '''Write all field values into buffers and return concatanated buffer
         It will ensure the single row length does not exceed max_line_length
         '''
         paramSet = [{} if dict is None else dict, keyArgs]
-        
+        values = {}
         for params in paramSet:
             for key in params:
-                self.field_map[key].value = params[key]
+                values[key] = params[key]
         
         lineLength = 0
         buffer = ''
         for field in self.fields:
-            fieldBuffer = field.write()
+            fieldBuffer = field.write(values[field.name])
             fieldLength = len(fieldBuffer)
             if lineLength + fieldLength >= max_line_length:
                 lineLength = fieldLength
@@ -64,27 +75,23 @@ class Record:
             buffer += fieldBuffer
         return buffer
     
-    def parse(self, buffer):
-        for field in self.fields:
-            buffer = field.parse(buffer)
-        return buffer
-    
-    def __getattr__(self, name):
-        '''Handle the access to the values (not the fields) through field names for reading'''
-        if name in self.field_map:
-            return self.field_map[name].value
-        raise AttributeError
-        
-    def __setattr__(self, name, value):
-        '''Handle the access to the values (not the fields) through field names for writing
-        Unlike the __getattr__, this method is called for all attribute access so there is a chance
-        of recursion here
-        '''
-        if 'field_map' in self.__dict__:
-            field_map = self.__dict__['field_map']
-            if name in field_map:
-                field_map[name].value = value
-        self.__dict__[name] = value
+    if 0: #THESE WILL BE MOVED TO THE DATASET
+        def __getattr__(self, name):
+            '''Handle the access to the values (not the fields) through field names for reading'''
+            if name in self.field_map:
+                return self.field_map[name].value
+            raise AttributeError
+            
+        def __setattr__(self, name, value):
+            '''Handle the access to the values (not the fields) through field names for writing
+            Unlike the __getattr__, this method is called for all attribute access so there is a chance
+            of recursion here
+            '''
+            if 'field_map' in self.__dict__:
+                field_map = self.__dict__['field_map']
+                if name in field_map:
+                    field_map[name].value = value
+            self.__dict__[name] = value
         
         
         
@@ -100,26 +107,18 @@ class TestRecord(unittest.TestCase):
                      , Field(str, 20, 'units_description', 'units description')
                      , Field(int, 10, 'temperature_mode', '1 - absolute, 2 - relative')
                     ]
-        self.buffer = '         2Foot (pound f)               1'
+        self.tokenizer = Tokenizer('         2Foot (pound f)               1')
         
     def tearDown(self):
         pass
     
     #Read
-    def test_read_ValuesCanBeAccessedByFieldIndex(self):
-        record = Record(self.fields)
-        record.read(self.buffer)
-        self.assertEqual(record.fields[0].value, 2)
-        self.assertEqual(record.fields[1].value, 'Foot (pound f)')
-        self.assertEqual(record.fields[2].value, 1)
-        
     def test_read_ValuesCanBeAccessedByName(self):
-        buffer = '         2Foot (pound f)               1'
         record = Record(self.fields)
-        record.read(buffer)
-        self.assertEqual(record.units_code, 2)
-        self.assertEqual(record.units_description, 'Foot (pound f)')
-        self.assertEqual(record.temperature_mode, 1)
+        values = record.read(self.tokenizer)
+        self.assertEqual(values.units_code, 2)
+        self.assertEqual(values.units_description, 'Foot (pound f)')
+        self.assertEqual(values.temperature_mode, 1)
     
     def test_read_HandlesNewLineCharactersInTheBuffer(self):
     
@@ -129,36 +128,21 @@ class TestRecord(unittest.TestCase):
         for i in range(4):
             fields.append(Field(float, (25, 17), 'value_%i' % i, ''))
         record = Record(fields)
-        record.read(buffer)
-        self.assertEqual(record.fields[0].value, 0.0)
-        self.assertEqual(record.fields[1].value, 2.0)
-        self.assertEqual(record.fields[2].value, 4.0)
-        self.assertEqual(record.fields[3].value, 6.0)
+        values = record.read(Tokenizer(buffer))
+        for i in range(4):
+            self.assertEqual(values['value_%i' % i], i * 2.0)
         
     ##Write
-    def test_write_ValuesCanBeAccessedByName(self):
-        record = Record(self.fields)
-        record.units_code = 2
-        self.assertEqual(record.units_code, 2)
-        self.assertEqual(record.fields[0].value, record.units_code)
-    
-    def test_write_ReturnsTheCorrectStringBufferForExistingValues(self):
-        record = Record(self.fields)
-        record.units_code = 2
-        record.units_description = 'Foot (pound f)'
-        record.temperature_mode = 1
-        buffer = record.write()
-        self.assertEqual(buffer, self.buffer)
         
     def test_write_AcceptValuesAsNamedParameters(self):
         record = Record(self.fields)
         buffer = record.write(units_code = 2, units_description = 'Foot (pound f)', temperature_mode = 1)
-        self.assertEqual(buffer, self.buffer)
+        self.assertEqual(buffer, self.tokenizer.read_all())
         
     def test_write_AcceptValuesAsDictionary(self):
         record = Record(self.fields)
         buffer = record.write({'units_code' : 2, 'units_description' : 'Foot (pound f)', 'temperature_mode' : 1})
-        self.assertEqual(buffer, self.buffer)
+        self.assertEqual(buffer, self.tokenizer.read_all())
         
         
     def test_write_HandlesNewLineCharactersInTheBuffer(self):
@@ -166,12 +150,13 @@ class TestRecord(unittest.TestCase):
         buffer = '''  0.00000000000000000e+00  2.00000000000000000e+00  4.00000000000000000e+00
   6.00000000000000000e+00'''
         fields = []
+        values = {}
         for i in range(4):
             fields.append(Field(float, (25, 17), 'value_%i' % i, ''))
-            fields[i].value = i * 2.0
+            values['value_%i' % i] = i * 2.0
             
         record = Record(fields)
-        self.assertEqual(buffer, record.write())
+        self.assertEqual(buffer, record.write(values))
     
           
             
