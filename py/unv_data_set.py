@@ -253,7 +253,7 @@ class TestDataSet(unittest.TestCase):
             
             for i in range(len(data)):
                 self.assertEqual(data[i].node_label, 67 + i)
-                self.assertEqual(data[i].coordinate_y, 0.02 * i)
+                self.assertEqual(data[i].coordinate[1], 0.02 * i)
 
     def test_read_data_ReadsTheBufferUntillDataSetEndIdentifier(self):
         buffer = self.buffer2411 + dataset_end + '\n' + self.buffer2411
@@ -264,7 +264,7 @@ class TestDataSet(unittest.TestCase):
             
             for i in range(len(data)):
                 self.assertEqual(data[i].node_label, 67 + i)
-                self.assertEqual(data[i].coordinate_y, 0.02 * i)
+                self.assertEqual(data[i].coordinate[1], 0.02 * i)
     
     def test_read_data_RaisesValueErrorIfStreamEndsInTheMiddle(self):
         with Tokenizer(self.buffer2411[:25]) as tokenizer:
@@ -288,7 +288,7 @@ class TestDataSet(unittest.TestCase):
             
             for i in range(len(dataSet.data)):
                 self.assertEqual(dataSet.data[i].node_label, 67 + i)
-                self.assertEqual(dataSet.data[i].coordinate_y, 0.02 * i)
+                self.assertEqual(dataSet.data[i].coordinate[1], 0.02 * i)
     
     
     #skip

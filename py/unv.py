@@ -103,7 +103,7 @@ LMS Virtual.Lab Rev 11-SL1
             dataSet.skip()
         self.assertEqual(dataSets, [151, 164, 2411])
         
-    def test_data_sets_CanReadRandomly(self):
+    def test_data_sets_CanReadRandomlyTheDefinition(self):
         dataSets = {}
         for dataSet in data_sets(self.tokenizer):
             dataSets[dataSet.number] = dataSet
@@ -113,7 +113,9 @@ LMS Virtual.Lab Rev 11-SL1
         unitDataSet = dataSets[164]    
         self.assertEqual(unitDataSet.values.units_code, 1)
         self.assertEqual(unitDataSet.values.units_desc, 'SI - mks (Newton)')
-            
+    
+    def _test_data_sets_CanReadRandomlyTheData(self):
+        self.assertEquals(1, 0, 'Test where we have both definition and data')
         
 #
 if __name__ == '__main__':
