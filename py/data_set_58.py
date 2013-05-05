@@ -174,6 +174,7 @@ class DataSet58 (DataSet):
                      ], 'z_axis')
         ]
         DataSet.__init__(self, 58, definitionRecords, [], tokenizer)
+        self.name = 'Function at Nodal DOF'
         
     def read_definition(self):
         '''Data record format of this data set depends on two fields in definition:

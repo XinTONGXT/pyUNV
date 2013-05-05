@@ -16,8 +16,7 @@ import cStringIO
 
 # Internal
 from unv_tokenizer import Tokenizer
-from unv_data_set import DataSet, dataset_start 
-from unv_data_sets import get_data_set_definition
+from unv_data_set import DataSet, dataset_start, get_data_set
 
 #
 def get_data_set_number(tokenizer):
@@ -34,10 +33,8 @@ def data_sets(tokenizer):
             break
             
         if buffer == dataset_start:
-            
             dataSetNumber =  get_data_set_number(tokenizer)
-            dataSetDefinition = get_data_set_definition(dataSetNumber)
-            dataSet = DataSet(dataSetNumber, dataSetDefinition['definition'], dataSetDefinition['data'], tokenizer)
+            dataSet = get_data_set(dataSetNumber, tokenizer)
             yield dataSet
             
     
