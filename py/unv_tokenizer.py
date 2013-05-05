@@ -36,7 +36,10 @@ class Tokenizer:
         It would be still nice to test it here
     '''
     def __init__(self, buffer):
-        self.stream = StringIO(buffer)
+        if hasattr(buffer, 'readline'):
+            self.stream = buffer
+        else:
+            self.stream = StringIO(buffer)
         self.line = ''
         
     def read(self, length):
@@ -98,6 +101,7 @@ class TestField(unittest.TestCase):
     def tearDown(self):
         pass
     
+    #Tokenizer with String Buffers
     def test_read_ReturnsSameLengthAsItIsAsked(self):
         tokenizer = Tokenizer('123456789')
         self.assertEqual(tokenizer.read(5), '12345')
@@ -131,7 +135,17 @@ class TestField(unittest.TestCase):
         tokenizer.seek(5)
         self.assertEqual(tokenizer.read(7), '6789012')
         
+    #Tokenizer with File Buffers
+    def test_read_FileReturnsSameLengthAsItIsAsked(self):
+        tokenizer = Tokenizer(open('../data/tokenizer.txt', 'r'))
+        self.assertEqual(tokenizer.read(5), '12345')
+        self.assertEqual(tokenizer.read(4), '6789')
     
+    def test_seek_FileSetsTheCurrentPosition(self):
+        tokenizer = Tokenizer(open('../data/tokenizer.txt', 'r'))
+        tokenizer.seek(5)
+        self.assertEqual(tokenizer.read(7), '6789012')
+        
 #
 if __name__ == '__main__':
     unittest.main()

@@ -36,6 +36,7 @@ _types = {
     , 'D' : float
     , 'E' : float
     , 'I' : int
+    , 'X' : str #space field
 }
     
 def _parse_field_format(format):
@@ -48,8 +49,11 @@ def _parse_field_format(format):
     idx = 0
     while format[idx].isdigit():
         idx += 1
-    r = int(format[:idx])
-    
+    try:
+        r  = int(format[:idx])
+    except:
+        r = 1
+        
     if format[idx] == 'P': #Multi Dimension is requested
         format = format[idx + 1: ]
         idx = 0
@@ -58,34 +62,37 @@ def _parse_field_format(format):
         d = int(format[:idx])
         
     t = _types[format[idx]]
-    format = format[idx + 1:]
-    if t is float:
-        format = format.split('.')
-        l = (int(format[0]), int(format[1]) )
+    if format[idx] == 'X':  #Space character is defined onyl by repeat
+        l = 1
+        d = 1
     else:
-        l = int(format)
-    
-    if t is str:
-        (r, l) = (1, r * l)
+        format = format[idx + 1:]
+        if t is float:
+            format = format.split('.')
+            l = (int(format[0]), int(format[1]) )
+        else:
+            l = int(format)
+        
+        if t is str:
+            (r, l) = (1, r * l)
     return (r, t, l, d)
     
-def field(format, name, description):
+def field(format, name, description, options=None):
     '''Create new Field objects parsing the format string for dimension, type and length of the field'''
     r, t, l, d = _parse_field_format(format)
-    return Field(t, l, name, description, d)
+    return Field(t, l, name, description, d, options)
     
 #
 #
 class Field:
-    def __init__(self, type, length, name, description, dimension=1):
+    def __init__(self, _type, length, name, description, dimension=1, options=None):
         '''
-        Supported Types: 
-            A -> str
-            I -> int
-            D -> float
+        TODO: make the parameters all named. Add "format" as input parameter which then
+        allows type, length, dimension to be retrieved from the format. This way we don't 
+        need the field method.
         '''
-        self.type = type
-        if type is float:
+        self.type = _type
+        if _type is float:
             self.length = length[0]
             self.decimals = length[1]
             #Value is written as right alignment in a full length string
@@ -95,7 +102,7 @@ class Field:
             self.length = length
             self.decimals = 0
             #Value is written as right alignment in a full length string
-            if type is str:
+            if _type is str:
                 self.format_string = '{:<%i}' % self.length
             else:
                 self.format_string = '{:>%i}' % self.length
@@ -104,6 +111,16 @@ class Field:
         self.description = description  
         self.dimension = dimension
         
+        if options != None and type(options) is str:
+            newOptions = {}
+            lines = options.split('\n')
+            for line in lines:
+                line = line.split(' - ')
+                if len(line) == 2:
+                    newOptions[self.type(line[0])] = line[1].strip()
+            options = newOptions
+            
+        self.options = options
     
     def read(self, tokenizer):
         '''read the value from given buffer, it returns itself so caller can perform
@@ -144,7 +161,16 @@ class Field:
             for i in range(self.dimension):
                 buffer += self.format_string.format(value[i])
             return buffer
+    
+    def describe(self, value):
+        '''Field object, by default, does not have self.options so this method call
+        will raise an exception. Custom fields can provide this dictionary to return
+        more descriptive info about a specific value.
         
+        For more custom behavior, field classes can override the method completely
+        '''
+        if value in self.options:
+            return self.options[value]
         
 #
 # Tests
@@ -173,6 +199,9 @@ class TestField(unittest.TestCase):
         self.assertEquals(_parse_field_format('3E13.5'), (3, float, (13,5), 1))
         self.assertEquals(_parse_field_format('1D13.5'), (1, float, (13,5), 1))
         self.assertEquals(_parse_field_format('3D13.5'), (3, float, (13,5), 1))
+    
+    def test_parse_field_format_SupportsSpace(self):
+        self.assertEquals(_parse_field_format('1X'), (1, str, 1, 1))
         
     def test_parse_field_format_SupportsMultiDimensionFloats(self):
         self.assertEquals(_parse_field_format('1P3D13.5'), (1, float, (13,5), 3))

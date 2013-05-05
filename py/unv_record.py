@@ -30,9 +30,14 @@ max_line_length = 80
 #
 #
 class Record:
-    def __init__(self, fields):
+    def __init__(self, fields, name=None):
         '''
+        @name: (optional) name of the record which can be used by the data set to expose the fields
+        if name is not given (None) than all fields are available at data set level, if it is given
+        then the values will be part of a record defined by the name and can be accessed as:
+        dataSet.<record name>.<field name>
         '''
+        self.name = name
         self.fields = fields
         self.field_map = {}
         for field in self.fields:
@@ -43,7 +48,14 @@ class Record:
         values = Storage()
         try:
             for field in self.fields:
-                values[field.name] = field.read(tokenizer)
+                value = field.read(tokenizer)
+                values[field.name] = value
+                try:
+                    values[field.name + '_'] = field.describe(value)
+                except:
+                    pass
+                    
+                
         except (StopIteration, DataSetIdentifierException) as e:
             if len(values.keys()) == 0:
                 raise e 
@@ -74,26 +86,6 @@ class Record:
                 lineLength += fieldLength
             buffer += fieldBuffer
         return buffer
-    
-    if 0: #THESE WILL BE MOVED TO THE DATASET
-        def __getattr__(self, name):
-            '''Handle the access to the values (not the fields) through field names for reading'''
-            if name in self.field_map:
-                return self.field_map[name].value
-            raise AttributeError
-            
-        def __setattr__(self, name, value):
-            '''Handle the access to the values (not the fields) through field names for writing
-            Unlike the __getattr__, this method is called for all attribute access so there is a chance
-            of recursion here
-            '''
-            if 'field_map' in self.__dict__:
-                field_map = self.__dict__['field_map']
-                if name in field_map:
-                    field_map[name].value = value
-            self.__dict__[name] = value
-        
-        
         
 #
 # Tests
@@ -163,4 +155,5 @@ class TestRecord(unittest.TestCase):
 #
 if __name__ == '__main__':
     unittest.main()
+     
     

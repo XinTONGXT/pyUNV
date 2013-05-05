@@ -43,7 +43,7 @@ def data_sets(tokenizer):
     
 #
 # Tests
-#
+# To run all the tests in the folder: python -m unittest discover -p *.py
 import unittest
 
 class TestUNV(unittest.TestCase):

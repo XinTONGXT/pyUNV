@@ -150,9 +150,17 @@ class DataSet:
             
         _values = Storage()
         for record in self.definition_records:
-            values = record.read(self.tokenizer)
-            for key in values:
-                _values[key] = values[key]
+            recordValues = record.read(self.tokenizer)
+            if record.name:
+                try:
+                    values = _values[record.name]
+                except:
+                    values = Storage()
+                    _values[record.name] = values
+            else:
+                values = _values
+            for key in recordValues:
+                values[key] = recordValues[key]
         return _values
         
     def read_data(self):
@@ -243,7 +251,42 @@ class TestDataSet(unittest.TestCase):
             self.assertEqual(dataSet.values.force, 2.0)
             self.assertEqual(dataSet.values.temperature, 3.0)
             self.assertEqual(dataSet.values.temperature_offset, 4.0)
-    
+            
+            
+    def test_read_FullDataSetThroughNamedRecords(self):
+        with Tokenizer(self.buffer164) as tokenizer:
+            dataSet = get_data_set(164, tokenizer)
+            dataSet.definition_records[0].name = 'units'
+            
+            self.assertEqual(dataSet.values.units.units_code, 1)
+            self.assertEqual(dataSet.values.units.units_desc, 'SI - mks (Newton)')
+            self.assertEqual(dataSet.values.units.temperature_mode, 2)
+            
+            self.assertEqual(dataSet.values.length, 1.0)
+            self.assertEqual(dataSet.values.force, 2.0)
+            self.assertEqual(dataSet.values.temperature, 3.0)
+            self.assertEqual(dataSet.values.temperature_offset, 4.0)
+            
+            dataSet.definition_records[0].name = None
+            
+    def test_read_FullDataSetThroughMergedNamedRecords(self):
+        with Tokenizer(self.buffer164) as tokenizer:
+            dataSet = get_data_set(164, tokenizer)
+            dataSet.definition_records[0].name = 'units'
+            dataSet.definition_records[1].name = 'units'
+            
+            self.assertEqual(dataSet.values.units.units_code, 1)
+            self.assertEqual(dataSet.values.units.units_desc, 'SI - mks (Newton)')
+            self.assertEqual(dataSet.values.units.temperature_mode, 2)
+            
+            self.assertEqual(dataSet.values.units.length, 1.0)
+            self.assertEqual(dataSet.values.units.force, 2.0)
+            self.assertEqual(dataSet.values.units.temperature, 3.0)
+            self.assertEqual(dataSet.values.units.temperature_offset, 4.0)
+            
+            dataSet.definition_records[0].name = None
+            dataSet.definition_records[1].name = None
+            
     #Read Data (data)
     def test_read_data_ReadsTheWholeBuffer(self):
         with Tokenizer(self.buffer2411) as tokenizer:
