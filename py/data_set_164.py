@@ -14,7 +14,7 @@ __doc__ = ''' '''
 
 # Internal
 from unv_data_set import DataSet, Record, Tokenizer
-from unv_field import field, Field
+from unv_field import Field
 
     
 #Custom Fields
@@ -37,15 +37,15 @@ class DataSet164 (DataSet):
     def __init__(self, tokenizer):
         definitionRecords = [
           Record([   
-              field('1I10', 'units_code', '', UnitsCodeOptions)
-            , field('20A1', 'units_desc', '')
-            , field('1I10', 'temperature_mode', '', TemperatureModeOptions)
+              Field(format='1I10', name='units_code', options=UnitsCodeOptions)
+            , Field(format='20A1', name='units_desc')
+            , Field(format='1I10', name='temperature_mode', options=TemperatureModeOptions)
           ])
         , Record([
-              field('1D25.17', 'length', '')
-            , field('1D25.17', 'force', '')
-            , field('1D25.17', 'temperature', '')
-            , field('1D25.17', 'temperature_offset', '')
+              Field(format='1D25.17', name='length')
+            , Field(format='1D25.17', name='force')
+            , Field(format='1D25.17', name='temperature')
+            , Field(format='1D25.17', name='temperature_offset')
           ])
         ]
         

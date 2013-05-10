@@ -14,7 +14,7 @@ __doc__ = ''' '''
 
 # Internal
 from unv_data_set import DataSet, Record, Tokenizer
-from unv_field import field, Field
+from unv_field import Field
 
     
 #Custom Fields
@@ -28,23 +28,24 @@ FileTypeOptions = '''0 - Universal
 class DataSet151 (DataSet):
     def __init__(self, tokenizer):
         definitionRecords = [
-          Record([field('80A1', 'model_file_name', '')])
-        , Record([field('80A1', 'model_file_description', '')])
-        , Record([field('80A1', 'application_created_db', '')])
-        , Record([   field('10A1', 'date_db_created', '')
-            , field('1I10', 'time_db_created', '')
-            , field('1I10', 'db_version', '')
-            , field('1I10', 'db_subversion', '')
-            , field('1I10', 'file_type', '', FileTypeOptions)
+          Record([Field(format='80A1', name='model_file_name')])
+        , Record([Field(format='80A1', name='model_file_description')])
+        , Record([Field(format='80A1', name='application_created_db')])
+        , Record([
+              Field(format='10A1', name='date_db_created')
+            , Field(format='1I10', name='time_db_created')
+            , Field(format='1I10', name='db_version')
+            , Field(format='1I10', name='db_subversion')
+            , Field(format='1I10', name='file_type', options=FileTypeOptions)
           ])
         , Record([
-              field('10A1', 'date_last_saved', '')
-            , field('10A1', 'time_last_saved', '')
+              Field(format='10A1', name='date_last_saved')
+            , Field(format='10A1', name='time_last_saved')
           ])
-        , Record([field('80A1', 'application_created_file', '')])
+        , Record([Field(format='80A1', name='application_created_file')])
         , Record([   
-              field('10A1', 'date_file_created', '')
-            , field('10A1', 'time_file_created', '')
+              Field(format='10A1', name='date_file_created')
+            , Field(format='10A1', name='time_file_created')
             #Below are in the html but not in the record we have
             #, Field(int,  5, 'release_wrote_file', '')
             #, Field(int,  5, 'version', '')

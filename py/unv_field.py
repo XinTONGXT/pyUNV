@@ -23,9 +23,9 @@ Field Types are Like:
 
 # Standard
 from cStringIO import StringIO
-
+import json
 # 3rd Party
-
+from web import Storage
 # Internal
 from unv_tokenizer import Tokenizer, DataSetIdentifierException, dataset_marker
 
@@ -38,6 +38,7 @@ _types = {
     , 'I' : int
     , 'X' : str #space field
 }
+
     
 def _parse_field_format(format):
     '''returns a tuple of values from given format as (repeat, type, length, dimension) where:
@@ -85,14 +86,22 @@ def field(format, name, description, options=None):
 #
 #
 class Field:
-    def __init__(self, _type, length, name, description, dimension=1, options=None):
+    def __init__(self 
+        , value_type=None
+        , length=1
+        , name='' 
+        , description='' 
+        , dimension=1
+        , options=None
+        , format=None):
         '''
-        TODO: make the parameters all named. Add "format" as input parameter which then
-        allows type, length, dimension to be retrieved from the format. This way we don't 
-        need the field method.
+        if @format is given then the @value_type, @length, @dimension is retrieved from it
         '''
-        self.type = _type
-        if _type is float:
+        if format is not None:
+            r, value_type, length, dimension = _parse_field_format(format)
+        
+        self.value_type = value_type
+        if value_type is float:
             self.length = length[0]
             self.decimals = length[1]
             #Value is written as right alignment in a full length string
@@ -102,7 +111,7 @@ class Field:
             self.length = length
             self.decimals = 0
             #Value is written as right alignment in a full length string
-            if _type is str:
+            if value_type is str:
                 self.format_string = '{:<%i}' % self.length
             else:
                 self.format_string = '{:>%i}' % self.length
@@ -117,7 +126,7 @@ class Field:
             for line in lines:
                 line = line.split(' - ')
                 if len(line) == 2:
-                    newOptions[self.type(line[0])] = line[1].strip()
+                    newOptions[self.value_type(line[0])] = line[1].strip()
             options = newOptions
             
         self.options = options
@@ -134,9 +143,9 @@ class Field:
                 #TODO: Below check is needed since trying to format an empty string as number gives trouble
                 value = None
                 if buffer != '':
-                    value = self.type(buffer)
+                    value = self.value_type(buffer)
                 else:
-                    value = self.type() #default value is used based on type
+                    value = self.value_type() #default value is used based on type
                 values[i] = value
                 readValues += 1
                 
@@ -171,6 +180,73 @@ class Field:
         '''
         if value in self.options:
             return self.options[value]
+    
+    #json
+    def __repr__(self):
+        s = object.__repr__(self)
+        return '<' + 'Field ' + s[1:] + ' ' + str(self.to_json())
+       
+        
+        
+        
+    def to_json(self):
+        value_type = ''
+        for k in _types:
+            if _types[k] is self.value_type:
+                value_type = k
+                break
+                
+        return {
+             'value_type': value_type
+            , 'length': self.length
+            , 'name': self.name
+            , 'description': self.description
+            , 'dimension': self.dimension
+            , 'options': self.options
+        }
+    
+    def from_json(self, dict):
+        dict = Storage(dict)
+        self.value_type = _types[dict.value_type]
+        self.length = dict.length
+        self.name = dict.name
+        self.description = dict.description
+        self.dimension = dict.dimension
+        self.options = dict.options
+    
+class CustomTypeEncoder(json.JSONEncoder):
+    '''A custom JSONEncoder class that knows how to encode core custom
+    objects.
+
+    Custom objects are encoded as JSON object literals (ie, dicts) with
+    one key, '__TypeName__' where 'TypeName' is the actual name of the
+    type to which the object belongs.  That single key maps to another
+    object literal which is just the __dict__ of the object encoded.'''
+
+    def default(self, obj):
+        #if isinstance(obj, Field):
+        if hasattr(obj, 'to_json'):
+            key = '__%s__' % obj.__class__.__name__
+            return { key: obj.to_json() }
+        return json.JSONEncoder.default(self, obj)
+
+class CustomTypeDecoder(json.JSONDecoder):
+    '''
+    '''
+    def decode(self, s):
+        dict = json.JSONDecoder.decode(self, s)
+        if len(dict.keys()) == 1:
+            key = dict.keys()[0]
+            try:
+                #TODO: Perhaps I should make from_json as a class method which will return 
+                #the properly initialized object instead of we creating one
+                exec 'obj = %s()' % key.strip('_')
+                if hasattr(obj, 'from_json'):
+                    obj.from_json(dict[key])
+                    return obj
+            except:
+                pass
+        return dict
         
 #
 # Tests
@@ -184,7 +260,7 @@ class TestField(unittest.TestCase):
     def tearDown(self):
         pass
     
-    #make_field
+    #_parse_field_format
     def test_parse_field_format_SupportsIntegerType(self):
         self.assertEquals(_parse_field_format('1I5'), (1, int, 5, 1))
         self.assertEquals(_parse_field_format('3I7'), (3, int, 7, 1))
@@ -269,6 +345,13 @@ class TestField(unittest.TestCase):
         with self.assertRaises(ValueError):
             field.write(values)
         
+    #json
+    def test_dumps_DumpsTheField(self):
+        field = Field(format='1I5', name='test', description='test field')
+        dumps = json.dumps(field, cls=CustomTypeEncoder)
+        print '\n', dumps
+        newField = json.loads(dumps, cls=CustomTypeDecoder)
+        print '\n', newField
 #
 if __name__ == '__main__':
     unittest.main()

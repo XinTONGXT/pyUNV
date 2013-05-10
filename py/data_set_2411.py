@@ -14,7 +14,7 @@ __doc__ = ''' '''
 
 # Internal
 from unv_data_set import DataSet, Record, Tokenizer
-from unv_field import field, Field
+from unv_field import Field
 
     
 #Custom Fields
@@ -25,12 +25,12 @@ class DataSet2411 (DataSet):
     def __init__(self, tokenizer):
         dataRecords = [
               Record([   
-                  field('1I10', 'node_label', '')
-                , field('1I10', 'export_coordinate_system', '')
-                , field('1I10', 'displacement_coordinate_system', '')
-                , field('1I10', 'color', '')
+                  Field(format='1I10', name='node_label')
+                , Field(format='1I10', name='export_coordinate_system')
+                , Field(format='1I10', name='displacement_coordinate_system')
+                , Field(format='1I10', name='color')
               ])
-            , Record([field('1P3D25.16', 'coordinate', '')])
+            , Record([Field(format='1P3D25.16', name='coordinate')])
         ]
         
         DataSet.__init__(self, 2411, [], dataRecords, tokenizer)
