@@ -35,6 +35,7 @@ _types = {
       'A' : str
     , 'D' : float
     , 'E' : float
+    , 'C' : complex
     , 'I' : int
     , 'X' : str #space field
 }
@@ -68,7 +69,7 @@ def _parse_field_format(format):
         d = 1
     else:
         format = format[idx + 1:]
-        if t is float:
+        if t is float or t is complex:
             format = format.split('.')
             l = (int(format[0]), int(format[1]) )
         else:
@@ -78,10 +79,6 @@ def _parse_field_format(format):
             (r, l) = (1, r * l)
     return (r, t, l, d)
     
-def field(format, name, description, options=None):
-    '''Create new Field objects parsing the format string for dimension, type and length of the field'''
-    r, t, l, d = _parse_field_format(format)
-    return Field(t, l, name, description, d, options)
     
 #
 #
@@ -101,7 +98,7 @@ class Field:
             r, value_type, length, dimension = _parse_field_format(format)
         
         self.value_type = value_type
-        if value_type is float:
+        if value_type is float or value_type is complex:
             self.length = length[0]
             self.decimals = length[1]
             #Value is written as right alignment in a full length string
@@ -143,7 +140,17 @@ class Field:
                 #TODO: Below check is needed since trying to format an empty string as number gives trouble
                 value = None
                 if buffer != '':
-                    value = self.value_type(buffer)
+                    if self.value_type is not complex:
+                        value = self.value_type(buffer)
+                    else:
+                        re = float(buffer)
+                        buffer = tokenizer.read(self.length)
+                        buffer = buffer.strip()
+                        if buffer != '':
+                            im = self.value_type(buffer)
+                        else:
+                            im = 0.0
+                        value = self.value_type(re, im)
                 else:
                     value = self.value_type() #default value is used based on type
                 values[i] = value
@@ -158,18 +165,25 @@ class Field:
                 raise ValueError('Not enough values found to read: ' + str(values))
             else:
                 raise e
+        except (ValueError) as e:
+            raise ValueError('Could not parse the value [%s] for Field [%s]' % (buffer, self.name))
+            
         
     def write(self, value):
         '''write the given value to a string format and return given value'''
         if self.dimension == 1:
-            return self.format_string.format(value)
-        else:
-            if self.dimension > len(value):
-                raise ValueError('Not enough value given to write')
-            buffer = ''
-            for i in range(self.dimension):
+            value = [value]
+        
+        if self.dimension > len(value):
+            raise ValueError('Not enough value given to write')
+        buffer = ''
+        for i in range(self.dimension):
+            if self.value_type is complex:
+                buffer += self.format_string.format(value[i].real)
+                buffer += self.format_string.format(value[i].imag)
+            else:
                 buffer += self.format_string.format(value[i])
-            return buffer
+        return buffer
     
     def describe(self, value):
         '''Field object, by default, does not have self.options so this method call
@@ -186,9 +200,6 @@ class Field:
         s = object.__repr__(self)
         return '<' + 'Field ' + s[1:] + ' ' + str(self.to_json())
        
-        
-        
-        
     def to_json(self):
         value_type = ''
         for k in _types:
@@ -276,6 +287,10 @@ class TestField(unittest.TestCase):
         self.assertEquals(_parse_field_format('1D13.5'), (1, float, (13,5), 1))
         self.assertEquals(_parse_field_format('3D13.5'), (3, float, (13,5), 1))
     
+    def test_parse_field_format_SupportsComplexFloats(self):
+        self.assertEquals(_parse_field_format('1C13.5'), (1, complex, (13,5), 1))
+        self.assertEquals(_parse_field_format('3C13.5'), (3, complex, (13,5), 1))
+        
     def test_parse_field_format_SupportsSpace(self):
         self.assertEquals(_parse_field_format('1X'), (1, str, 1, 1))
         
@@ -298,6 +313,12 @@ class TestField(unittest.TestCase):
         field = Field(float, (25, 17), '', '')
         with Tokenizer('  1.00000000000000000e+01') as tokenizer:
             self.assertEqual(field.read(tokenizer), 10.0)
+    
+    def test_read_HandlesComplex(self):
+        field = Field(complex, (25, 17), '', '')
+        with Tokenizer('  1.00000000000000000e+01  1.00000000000000000e+02') as tokenizer:
+            self.assertEqual(field.read(tokenizer), complex(10.0, 100.0))
+    
     
     def test_read_MultiDimensionData(self):
         field = Field(int, 2, '', '', 5)
@@ -331,6 +352,10 @@ class TestField(unittest.TestCase):
     def test_write_ReturnsAdjustedStringForFloat(self):
         field = Field(float, (25, 17), '', '')
         self.assertEqual(field.write(10.0), '  1.00000000000000000e+01')
+    
+    def test_write_ReturnsAdjustedStringForComplex(self):
+        field = Field(complex, (25, 17), '', '')
+        self.assertEqual(field.write(complex(10.0, 100.0)), '  1.00000000000000000e+01  1.00000000000000000e+02')
             
     def test_write_MultiDimensionData(self):
         field = Field(int, 2, '', '', 5)

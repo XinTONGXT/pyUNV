@@ -210,9 +210,9 @@ class DataSet58 (DataSet):
         elif values.data.ordinate_data_type == 4:
             fields.append(Field(format='1E20.12', name='value'))
         elif values.data.ordinate_data_type == 5:
-            fields.append(Field(format='1P2E13.5', name='value'))
+            fields.append(Field(format='C13.5', name='value'))
         elif values.data.ordinate_data_type == 6:
-            fields.append(Field(format='1P2E20.12', name='value'))
+            fields.append(Field(format='C20.12', name='value'))
         
         self.data_records = [Record(fields)]
         
@@ -294,7 +294,7 @@ class TestField(unittest.TestCase):
             
             for i in range(values.data.number_of_data_points):
                 self.assertEqual(data[i].abscissa, 10.0 * (i + 1))
-                self.assertEqual(data[i].value,   [1.0 * (i + 1) + 0.1, 1.0 * (i + 1) + 0.2])
+                self.assertEqual(data[i].value,   complex(1.0 * (i + 1) + 0.1, 1.0 * (i + 1) + 0.2))
             
         
 #
