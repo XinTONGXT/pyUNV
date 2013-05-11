@@ -19,7 +19,8 @@ as soon as definition is in place we should configure the data values
 # 3rd Party
 
 # Internal
-from unv_data_set import DataSet, Record, Tokenizer
+from unv_tokenizer import Tokenizer, data_folder
+from unv_data_set import DataSet, Record
 from unv_field import Field
 
     
@@ -245,7 +246,7 @@ class TestField(unittest.TestCase):
             
     #
     def test_DataSetReadsDefinition(self):
-        with Tokenizer(open('../data/58_real_data_with_argument.unv', 'r')) as tokenizer:
+        with Tokenizer(open(data_folder + '58_real_data_with_argument.unv', 'r')) as tokenizer:
             dataSet = DataSet58(tokenizer)
             self.assertEquals(dataSet.values.id_lines[1], 'Force_Time:+X')
             #...
@@ -271,7 +272,7 @@ class TestField(unittest.TestCase):
             
     #
     def test_DataSetInitializedDataRecordsForRealSingleDataWithArguents(self):
-        with Tokenizer(open('../data/58_real_data_with_argument.unv', 'r')) as tokenizer:
+        with Tokenizer(open(data_folder + '58_real_data_with_argument.unv', 'r')) as tokenizer:
             dataSet = DataSet58(tokenizer)
             values = dataSet.read_definition()
             self.assertEquals(len(dataSet.data_records), 1)
@@ -284,7 +285,7 @@ class TestField(unittest.TestCase):
                 
     #
     def test_DataSetInitializedDataRecordsForComplexSingleDataWithArguents(self):
-        with Tokenizer(open('../data/58_complex_data_with_argument.unv', 'r')) as tokenizer:
+        with Tokenizer(open(data_folder + '58_complex_data_with_argument.unv', 'r')) as tokenizer:
             dataSet = DataSet58(tokenizer)
             values = dataSet.read_definition()
             self.assertEquals(len(dataSet.data_records), 1)

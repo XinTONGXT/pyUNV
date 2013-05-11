@@ -349,10 +349,8 @@ class TestField(unittest.TestCase):
     def test_dumps_DumpsTheField(self):
         field = Field(format='1I5', name='test', description='test field')
         dumps = json.dumps(field, cls=CustomTypeEncoder)
-        print '\n', dumps
         newField = json.loads(dumps, cls=CustomTypeDecoder)
-        print '\n', newField
-#
+        
 if __name__ == '__main__':
     unittest.main()
     

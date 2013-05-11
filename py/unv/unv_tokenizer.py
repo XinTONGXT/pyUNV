@@ -19,7 +19,7 @@ from cStringIO import StringIO
 
 # Internal
 
-
+data_folder = '../../data/'
 dataset_marker  = '    -1'
 
 class DataSetIdentifierException(Exception):
@@ -137,12 +137,12 @@ class TestField(unittest.TestCase):
         
     #Tokenizer with File Buffers
     def test_read_FileReturnsSameLengthAsItIsAsked(self):
-        tokenizer = Tokenizer(open('../data/tokenizer.txt', 'r'))
+        tokenizer = Tokenizer(open(data_folder + '/tokenizer.txt', 'r'))
         self.assertEqual(tokenizer.read(5), '12345')
         self.assertEqual(tokenizer.read(4), '6789')
     
     def test_seek_FileSetsTheCurrentPosition(self):
-        tokenizer = Tokenizer(open('../data/tokenizer.txt', 'r'))
+        tokenizer = Tokenizer(open(data_folder + 'tokenizer.txt', 'r'))
         tokenizer.seek(5)
         self.assertEqual(tokenizer.read(7), '6789012')
         
