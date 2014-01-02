@@ -1,0 +1,2 @@
+distribute==0.6.15
+wsgiref==0.1.2
