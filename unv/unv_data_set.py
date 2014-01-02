@@ -224,7 +224,7 @@ class DataSet:
     def write(self):
         buffer = ''
         for record in self.definition_records:
-            buffer += record.write(self.values) + '\n'
+            buffer += record.write(self.values)
         return buffer
         
 #
@@ -393,7 +393,7 @@ class TestDataSet(unittest.TestCase):
         with Tokenizer(self.buffer164) as tokenizer:
             dataSet = get_data_set(164, tokenizer)
             dataSet.read_definition()
-            self.assertEqual(dataSet.write(), self.buffer164)
+            self.assertEqual(self.buffer164, dataSet.write())
         
         
 #

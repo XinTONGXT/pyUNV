@@ -24,7 +24,7 @@ from common import Storage
 from unv_tokenizer import Tokenizer, DataSetIdentifierException
 from unv_field import Field
 
-max_line_length = 80
+max_line_length = 81
 
 #
 #
@@ -99,10 +99,16 @@ class Record:
             fieldLength = len(fieldBuffer)
             if lineLength + fieldLength >= max_line_length:
                 lineLength = fieldLength
-                buffer += '\n'
+                if buffer != '':
+                    buffer += '\n'
             else:
                 lineLength += fieldLength
             buffer += fieldBuffer
+        
+        #Each record must end with a new line
+        if buffer[len(buffer) - 1] != '\n':
+            buffer += '\n'
+
         return buffer
         
 #
@@ -117,7 +123,7 @@ class TestRecord(unittest.TestCase):
                      , Field(str, 20, 'units_description', 'units description')
                      , Field(int, 10, 'temperature_mode', '1 - absolute, 2 - relative')
                     ]
-        self.tokenizer = Tokenizer('         2Foot (pound f)               1')
+        self.tokenizer = Tokenizer('         2Foot (pound f)               1\n')
         
     def tearDown(self):
         pass
@@ -164,7 +170,7 @@ class TestRecord(unittest.TestCase):
     def test_write_HandlesNewLineCharactersInTheBuffer(self):
     
         buffer = '''  0.00000000000000000e+00  2.00000000000000000e+00  4.00000000000000000e+00
-  6.00000000000000000e+00'''
+  6.00000000000000000e+00\n'''
         fields = []
         values = {}
         for i in range(4):
@@ -174,7 +180,15 @@ class TestRecord(unittest.TestCase):
         record = Record(fields)
         self.assertEqual(buffer, record.write(values))
     
-          
+    def test_writes_two_max_length_strings_in_two_lines(self):
+        fields = []
+        values = {}
+        for i in range(2):
+            fields.append(Field(str, 80, 'value_%i' % i, ''))
+            values['value_%i' % i] = 'a'
+        record = Record(fields)
+        buffer = 'a' + ' ' * 79 + '\n' + 'a' + ' ' * 79  + '\n'
+        self.assertEqual(buffer, record.write(values))
             
 #
 if __name__ == '__main__':
