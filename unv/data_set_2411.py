@@ -40,7 +40,7 @@ class DataSet2411 (DataSet):
 #
 import unittest
 
-class TestField(unittest.TestCase):
+class TestDataSet2411(unittest.TestCase):
     def setUp(self):
         pass
         

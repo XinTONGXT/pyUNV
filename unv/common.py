@@ -8,8 +8,14 @@ __version__ = "0.0"
 __doc__ = '''Some utility methods and options to be shared by other scripts in the package
 '''
 # Standard
+import os
 
 # 3rd Party
+ #TODO: Remove the dependency to web.py is the Storage is the only item we use it from there
+from web import Storage
+
+
+
 
 # Internal: None, this should not depend on any other
 def make_options(buffer, value_type, sep):
@@ -24,6 +30,15 @@ def make_options(buffer, value_type, sep):
     return options
 
     
+ 
+#
+def data_folder():
+    path =  os.path.dirname(os.path.realpath(__file__))
+    path = os.path.abspath(path + os.path.sep + '..' + os.path.sep + 'data')
+    return path + os.path.sep
     
- #TODO: Remove the dependency to web.py is the Storage is the only item we use it from there
-from web import Storage
+
+
+
+if __name__ == '__main__':
+    print data_folder()

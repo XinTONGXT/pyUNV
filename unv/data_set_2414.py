@@ -13,8 +13,7 @@ __doc__ = ''' '''
 # 3rd Party
 
 # Internal
-from common import make_options
-from unv_tokenizer import data_folder
+from common import make_options, data_folder
 from unv_data_set import DataSet, Record, Tokenizer
 from unv_field import Field
 
@@ -346,7 +345,7 @@ class DataSet2414 (DataSet):
 #
 import unittest
 
-class TestField(unittest.TestCase):
+class TestDataSet2414(unittest.TestCase):
     def setUp(self):
         pass
         
@@ -362,7 +361,7 @@ class TestField(unittest.TestCase):
     
     #
     def test_DataSetReadsDefinition(self):
-        with Tokenizer(open(data_folder + '2414_structural_mode_single_precision_complex.unv', 'r')) as tokenizer:
+        with Tokenizer(open(data_folder() + '2414_structural_mode_single_precision_complex.unv', 'r')) as tokenizer:
             dataSet = DataSet2414(tokenizer)
             values = dataSet.values;
             if 1: #Records 1 to 8
@@ -417,7 +416,7 @@ class TestField(unittest.TestCase):
                 self.assertEquals(values.modalB_im, 0.0)
             
     def test_DataSetInitializedDataRecordsForSinglePrecisionComplexWith6DOF(self):
-        with Tokenizer(open(data_folder + '2414_structural_mode_single_precision_complex.unv', 'r')) as tokenizer:
+        with Tokenizer(open(data_folder() + '2414_structural_mode_single_precision_complex.unv', 'r')) as tokenizer:
             dataSet = DataSet2414(tokenizer)
             values = dataSet.read_definition()
             self.assertEquals(len(dataSet.data_records), 2)

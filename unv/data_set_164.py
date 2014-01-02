@@ -56,7 +56,7 @@ class DataSet164 (DataSet):
 #
 import unittest
 
-class TestField(unittest.TestCase):
+class TestDataSet164(unittest.TestCase):
     def setUp(self):
         pass
         
