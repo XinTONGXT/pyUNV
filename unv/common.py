@@ -9,6 +9,7 @@ __doc__ = '''Some utility methods and options to be shared by other scripts in t
 '''
 # Standard
 import os
+from cStringIO import StringIO as Stream
 
 # 3rd Party
  #TODO: Remove the dependency to web.py is the Storage is the only item we use it from there

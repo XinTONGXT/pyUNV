@@ -51,6 +51,18 @@ class DataSet164 (DataSet):
         
         DataSet.__init__(self, 164, definitionRecords, [], tokenizer)
         self.name = 'Units'
+        
+    def defaults(self):
+        values = DataSet.defaults(self)
+        values.units_code = 1
+        values.units_desc = self.field_map['units_code'].describe(values.units_code)
+        values.temperature_mode = 2
+        values.length = 1.0
+        values.force = 1.0
+        values.temperature = 1.0
+        values.temperature_offset = 0.0
+        
+        return values
 #
 # Tests
 #

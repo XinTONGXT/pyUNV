@@ -52,8 +52,8 @@ from common import Storage
 from unv_record import Field, Record
 from unv_tokenizer import Tokenizer, DataSetIdentifierException
 
-dataset_start = '    -1'
-dataset_end   = '    -1'
+data_set_start = '    -1'
+data_set_end   = '    -1'
 
 #
 #
@@ -212,7 +212,7 @@ class DataSet:
         try:
             while True:
                 buffer = self.tokenizer.read_line()
-                if buffer == dataset_end:
+                if buffer == data_set_end:
                     return
                 if buffer == '':
                     break
@@ -336,7 +336,7 @@ class TestDataSet(unittest.TestCase):
                 self.assertEqual(data[i].coordinate[1], 0.02 * i)
 
     def test_read_data_ReadsTheBufferUntillDataSetEndIdentifier(self):
-        buffer = self.buffer2411 + dataset_end + '\n' + self.buffer2411
+        buffer = self.buffer2411 + data_set_end + '\n' + self.buffer2411
         with Tokenizer(buffer) as tokenizer:
             dataSet = get_data_set(2411, tokenizer)
             data = dataSet.read_data()
@@ -353,7 +353,7 @@ class TestDataSet(unittest.TestCase):
                 dataSet.read_data()
                 
     def test_read_data_RaisesValueErrorIfDataSetEndsInTheMiddle(self):
-        buffer = self.buffer2411[:25] + dataset_end + '\n' + self.buffer2411[25:] 
+        buffer = self.buffer2411[:25] + data_set_end + '\n' + self.buffer2411[25:] 
         with Tokenizer(buffer) as tokenizer:
             dataSet = get_data_set(2411, tokenizer)
             with self.assertRaises(ValueError):

@@ -4,6 +4,7 @@ from unv_tokenizer import TestTokenizer
 from unv_field import  TestField
 from unv_record import TestRecord 
 from unv_data_set import TestDataSet
+from unv_file import TestFile
 
 from data_set_58 import TestDataSet58
 from data_set_151 import TestDataSet151

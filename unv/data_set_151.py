@@ -9,6 +9,7 @@ __doc__ = ''' '''
 
 
 # Standard
+from datetime import datetime
 
 # 3rd Party
 
@@ -57,6 +58,20 @@ class DataSet151 (DataSet):
         
         DataSet.__init__(self, 151, definitionRecords, [], tokenizer)
         self.name = 'Header'
+        
+    def defaults(self):
+        values = DataSet.defaults(self)
+        values.model_file_name = 'newfile.unv'
+        values.model_file_description = 'NONE'
+        values.application_created_db = 'pyUNV'
+        values.application_created_file = 'pyUNV'
+        
+        now = datetime.now()
+        values.date_file_created = now.strftime('%d-%b-%y')
+        values.time_file_created = now.strftime('%H:%M:%S')
+        
+        return values
+        
 #
 # Tests
 #
