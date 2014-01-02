@@ -43,17 +43,26 @@ class File:
         self.stream = stream
         self.headerDataSet = get_data_set(151, None)
         self.unitsDataSet = get_data_set(164, None)
-    
+        self.dataSets = [self.headerDataSet, self.unitsDataSet]
+        
     def flush(self):
         '''flush the current content of the file to the given strem
         '''
         formatstring = '{:%i}\n' % (6)
-        for dataSet in [self.headerDataSet, self.unitsDataSet]:
+        for dataSet in self.dataSets:
             self.stream.write(data_set_start + '\n')
             self.stream.write(formatstring.format(dataSet.number))
             self.stream.write(dataSet.write())
             self.stream.write(data_set_end + '\n')
-        
+        self.dataSet = []
+    
+    def add(self, dataSet, flush):
+        ''' 
+        flush: True/False, If True it causes all existing data sets to be flushed to the stream
+        '''
+        self.dataSets.append(dataSet)
+        if flush:
+            self.flush()
 
 
 
@@ -100,6 +109,11 @@ class TestFile(unittest.TestCase):
             self.assertEqual(refDefaults[key], defaults[key])
             
     #Working with new files - Writing
+    def test_a_brand_new_file_without_flush_does_not_write_anything(self):
+        stream = Stream()
+        unvFile = File(stream)
+        self.assertEqual('', stream.getvalue())
+        
     def test_a_brand_new_file_writes_default_file(self):
         stream = Stream()
         unvFile = File(stream)
@@ -123,7 +137,17 @@ pyUNV
 '''
         #This assertion is not active due to the date time in reference data
         #self.assertEqual(expectedBuffer, stream.getvalue() )
+    
+    def test_new_file_addingnew_data_set_flashes_the_existing_records(self):
+        #stream = Stream()
+        stream = open('foo.txt', 'w')
+        unvFile = File(stream)
+        unvFile.add(get_data_set(164, None), True)
+        #again no assertion due to the date parameter
+        # stream.getvalue()
+        stream.close()
         
+    
 #
 if __name__ == '__main__':
     unittest.main()
