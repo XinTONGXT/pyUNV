@@ -130,6 +130,18 @@ class Field:
             
         self.options = options
     
+    def defaults(self):
+        values = [None] * self.dimension
+        for i in range(self.dimension):
+            value = self.value_type() #default value is used based on type
+            values[i] = value
+            
+        if self.dimension > 1:
+            return values
+        else:
+            return values[0]
+
+            
     def read(self, tokenizer):
         '''read the value from given buffer, it returns itself so caller can perform
         something like "print field.read().value" '''
@@ -298,6 +310,18 @@ class TestField(unittest.TestCase):
         
     def test_parse_field_format_SupportsMultiDimensionFloats(self):
         self.assertEquals(_parse_field_format('1P3D13.5'), (1, float, (13,5), 3))
+        
+    #Defaults
+    def test_defaults_returns_single_numeric_value(self):
+        field = Field(int, 10, '', '')
+        self.assertEqual(int(), field.defaults())
+        
+    def test_defaults_returns_multiple_numeric_value(self):
+        field = Field(int, 10, '', '', 2)
+        defaults = field.defaults()
+        self.assertEqual(2, len(defaults))
+        self.assertEqual(int(), defaults[0])
+        self.assertEqual(int(), defaults[1])
         
         
     #Read

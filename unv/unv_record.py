@@ -43,6 +43,24 @@ class Record:
         for field in self.fields:
             self.field_map[field.name] = field
 
+    def defaults(self):
+        '''Read all field values and return as an array'''
+        values = Storage()
+        try:
+            for field in self.fields:
+                value = field.defaults()
+                values[field.name] = value
+                try:
+                    values[field.name + '_'] = field.describe(value)
+                except:
+                    pass
+        except (StopIteration, DataSetIdentifierException) as e:
+            if len(values.keys()) == 0:
+                raise e 
+            else:
+                raise ValueError('Not all records can be read')
+        return values
+        
     def read(self, tokenizer):
         '''Read all field values and return as an array'''
         values = Storage()
@@ -104,6 +122,12 @@ class TestRecord(unittest.TestCase):
     def tearDown(self):
         pass
     
+    #Defaults
+    def test_defaults_returns_default_values_for_the_fields(self):
+        record = Record(self.fields)
+        values = record.defaults()
+        self.assertEqual(int(), values.units_code)
+        
     #Read
     def test_read_ValuesCanBeAccessedByName(self):
         record = Record(self.fields)

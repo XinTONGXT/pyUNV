@@ -153,11 +153,32 @@ class DataSet:
         return self.__data
     data = property(__getData)
     
+    def defaults(self):
+        '''This method is used to create the default values for the definition records'''
+        _values = Storage()
+        for record in self.definition_records:
+            recordValues = record.defaults()
+            if record.name:
+                try:
+                    values = _values[record.name]
+                except:
+                    values = Storage()
+                    _values[record.name] = values
+            else:
+                values = _values
+            for key in recordValues:
+                values[key] = recordValues[key]
+        return _values
+        
     def read_definition(self):
+        _values = Storage()
+        
+        if not self.tokenizer:
+            return self.defaults()
+            
         if self.tokenizer.tell() != self.__startPos:
             self.tokenizer.seek(self.__startPos)
             
-        _values = Storage()
         for record in self.definition_records:
             recordValues = record.read(self.tokenizer)
             if record.name:
@@ -233,6 +254,13 @@ class TestDataSet(unittest.TestCase):
     def tearDown(self):
         pass
     
+    #Defaults
+    def test_defaults_returns_the_default_values_for_records(self):
+        dataSet = get_data_set(164, None)
+        values = dataSet.defaults()
+        self.assertEqual(int(), values.units_code)
+            
+            
     #Read Definition (values)
     def test_read_FullDataSet(self):
         with Tokenizer(self.buffer164) as tokenizer:
