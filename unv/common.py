@@ -22,3 +22,8 @@ def make_options(buffer, value_type, sep):
         if len(line) == 2:
             options[value_type(line[0])] = line[1].strip()
     return options
+
+    
+    
+ #TODO: Remove the dependency to web.py is the Storage is the only item we use it from there
+from web import Storage

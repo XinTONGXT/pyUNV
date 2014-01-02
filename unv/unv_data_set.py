@@ -46,9 +46,9 @@ Record 2:       FORMAT(3D25.17)
 # Standard
 
 # 3rd Party
-from web import Storage
 
 # Internal
+from common import Storage
 from unv_record import Field, Record
 from unv_tokenizer import Tokenizer, DataSetIdentifierException
 

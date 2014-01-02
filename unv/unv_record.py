@@ -18,9 +18,9 @@ __doc__ = '''
 # Standard
 
 # 3rd Party
-from web import Storage
 
 # Internal
+from common import Storage
 from unv_tokenizer import Tokenizer, DataSetIdentifierException
 from unv_field import Field
 
