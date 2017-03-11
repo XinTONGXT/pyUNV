@@ -12,8 +12,6 @@ import os
 from cStringIO import StringIO as Stream
 
 # 3rd Party
- #TODO: Remove the dependency to web.py is the Storage is the only item we use it from there
-from web import Storage
 
 
 
@@ -39,7 +37,33 @@ def data_folder():
     return path + os.path.sep
     
 
+class Storage(dict):
+    def __getattr__(self, arg):
+        return self[arg]
+
+#
+# Tests
+#
+import unittest
+
+class TestStorage(unittest.TestCase):
+    def setUp(self):
+        pass
+        
+    def tearDown(self):
+        pass
+
+    def test_thatANewKeyCanBeAddedToAnEmptyStorage(self):
+        storage = Storage()
+        storage['a'] = 123
+        self.assertTrue(storage['a'] == 123)
+    def test_thatStorageCanBeInitializedWithNamedParameters(self):
+        storage = Storage(a=123)
+        self.assertEquals(storage['a'], 123)
+    def test_thatValuesCanBeAccessedLikeProprties(self):
+        storage = Storage(a=123)
+        self.assertEquals(storage.a, 123)
 
 
 if __name__ == '__main__':
-    print data_folder()
+    unittest.main()

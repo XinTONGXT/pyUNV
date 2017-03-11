@@ -1,5 +1,7 @@
 import unittest
 
+from common import TestStorage
+
 from unv_tokenizer import TestTokenizer
 from unv_field import  TestField
 from unv_record import TestRecord 

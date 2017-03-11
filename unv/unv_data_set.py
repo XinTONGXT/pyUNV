@@ -254,12 +254,6 @@ class TestDataSet(unittest.TestCase):
     def tearDown(self):
         pass
     
-    #Defaults
-    def test_defaults_returns_the_default_values_for_records(self):
-        dataSet = get_data_set(164, None)
-        values = dataSet.defaults()
-        self.assertEqual(int(), values.units_code)
-            
             
     #Read Definition (values)
     def test_read_FullDataSet(self):

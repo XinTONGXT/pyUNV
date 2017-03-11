@@ -138,14 +138,6 @@ pyUNV
         #This assertion is not active due to the date time in reference data
         #self.assertEqual(expectedBuffer, stream.getvalue() )
     
-    def test_new_file_addingnew_data_set_flashes_the_existing_records(self):
-        #stream = Stream()
-        stream = open('foo.txt', 'w')
-        unvFile = File(stream)
-        unvFile.add(get_data_set(164, None), True)
-        #again no assertion due to the date parameter
-        # stream.getvalue()
-        stream.close()
         
     
 #
