@@ -40,6 +40,11 @@ def data_folder():
 class Storage(dict):
     def __getattr__(self, arg):
         return self[arg]
+    def __str__(self):
+        text = ''
+        for key in self.keys():
+            text += str(key) + ': ' + str(self[key]) + '\n'
+        return text 
 
 #
 # Tests

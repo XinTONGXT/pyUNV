@@ -67,7 +67,27 @@ def get_data_set(number, tokenizer):
         #print '\n', 'exception: ', number
         return DataSet(number, [], [], tokenizer)
         
+#
+def get_data_set_number(tokenizer):
+    '''loop over till the end mark is found'''
+    dataSetNumber = int(tokenizer.read(-1))
+    if dataSetNumber <= 0:
+        raise ValueError('Data Set Number should be a positive, non zero value')
+    return dataSetNumber
 
+    
+#
+def data_sets(tokenizer):
+    while True:
+        buffer = tokenizer.read_line()
+        if not buffer:
+            break
+            
+        if buffer == data_set_start:
+            dataSetNumber =  get_data_set_number(tokenizer)
+            dataSet = get_data_set(dataSetNumber, tokenizer)
+            dataSet.skip()
+            yield dataSet
 #
 #
 def _num_values(records):

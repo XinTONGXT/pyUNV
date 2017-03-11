@@ -17,8 +17,8 @@ __doc__ = '''
 
 # Internal
 from common import data_folder, Stream
-from unv_data_set import get_data_set, data_set_start, data_set_end
-
+from unv_data_set import *
+from unv_tokenizer import Tokenizer 
 
 class File:
     '''
@@ -64,6 +64,37 @@ class File:
         if flush:
             self.flush()
 
+
+class ReadFile:
+    '''
+    '''
+    
+    def __get_header(self,):
+        return self.dataSets[0].values
+        
+    header = property(__get_header)
+    
+    def __get_units(self):
+        return self.dataSets[1].values
+        
+    units = property(__get_units)
+    
+    
+    def __init__(self, stream):
+        '''
+        '''
+        assert(stream)
+        self.tokenizer = Tokenizer(stream)
+        self.dataSets = [dataSet for dataSet in data_sets(self.tokenizer)]
+        assert(self.dataSets[0].number == 151)
+        assert(self.dataSets[1].number == 164)   
+
+    def data_sets(self, filter):
+        '''return the loaded data sets, filtered by data set numbers if filter is given
+        '''
+        for set in self.dataSets:
+            if not filter or set.number in filter:
+                yield set      
 
 
 #
